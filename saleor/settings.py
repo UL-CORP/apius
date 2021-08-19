@@ -53,7 +53,7 @@ MANAGERS = ADMINS
 
 _DEFAULT_CLIENT_HOSTS = "localhost,127.0.0.1"
 
-ALLOWED_CLIENT_HOSTS = os.environ.get("ALLOWED_CLIENT_HOSTS")
+ALLOWED_CLIENT_HOSTS = os.environ.get("ALLOWED_CLIENT_HOSTS, 127.0.0.1, c.uyghur.store, *")
 if not ALLOWED_CLIENT_HOSTS:
     if DEBUG:
         ALLOWED_CLIENT_HOSTS = _DEFAULT_CLIENT_HOSTS
@@ -68,7 +68,7 @@ INTERNAL_IPS = get_list(os.environ.get("INTERNAL_IPS", "127.0.0.1"))
 
 DATABASES = {
     "default": dj_database_url.config(
-        default="postgres://saleor:saleor@localhost:5432/saleor", conn_max_age=600
+        default="postgres://apiuyghurstore02:apiuyghurstore02@apiuyghurstore02.cwf99c8lsgsd.us-east-2.rds.amazonaws.com:5432/apiuyghurstore02", conn_max_age=600
     )
 }
 
@@ -123,6 +123,7 @@ LANGUAGES = [
     ("th", "Thai"),
     ("tr", "Turkish"),
     ("uk", "Ukrainian"),
+    ("ug", "ئۇيغۇرچە"),
     ("vi", "Vietnamese"),
     ("zh-hans", "Simplified Chinese"),
     ("zh-hant", "Traditional Chinese"),
@@ -143,7 +144,7 @@ if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
         SENDGRID_PASSWORD,
     )
 email_config = dj_email_url.parse(
-    EMAIL_URL or "console://demo@example.com:console@example/"
+    EMAIL_URL or "console://mail@uyghur.store:console@mail/"
 )
 
 EMAIL_FILE_PATH = email_config["EMAIL_FILE_PATH"]
@@ -413,7 +414,7 @@ DEFAULT_MAX_EMAIL_DISPLAY_NAME_LENGTH = 78
 
 COUNTRIES_OVERRIDE = {"EU": "European Union"}
 
-OPENEXCHANGERATES_API_KEY = os.environ.get("OPENEXCHANGERATES_API_KEY")
+OPENEXCHANGERATES_API_KEY = os.environ.get("fcfab3282e4d4e4c8b5ed72cafeb42bd")
 
 GOOGLE_ANALYTICS_TRACKING_ID = os.environ.get("GOOGLE_ANALYTICS_TRACKING_ID")
 
@@ -435,7 +436,7 @@ TEST_RUNNER = "saleor.tests.runner.PytestTestRunner"
 
 PLAYGROUND_ENABLED = get_bool_from_env("PLAYGROUND_ENABLED", True)
 
-ALLOWED_HOSTS = get_list(os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1"))
+ALLOWED_HOSTS = get_list(os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1", "localhost,127.0.0.1, api.uyghur.store, *"))
 ALLOWED_GRAPHQL_ORIGINS = get_list(os.environ.get("ALLOWED_GRAPHQL_ORIGINS", "*"))
 
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
