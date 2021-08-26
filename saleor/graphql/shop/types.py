@@ -16,6 +16,7 @@ from ...site import models as site_models
 from ..account.types import Address, AddressInput, StaffNotificationRecipient
 from ..checkout.types import PaymentGateway
 from ..core.connection import CountableDjangoObjectType
+from ..core.descriptions import ADDED_IN_31, DEPRECATED_IN_3X_INPUT
 from ..core.enums import LanguageCodeEnum, WeightUnitsEnum
 from ..core.types.common import CountryDisplay, LanguageDisplay, Permission
 from ..core.utils import str_to_enum
@@ -84,9 +85,8 @@ class Shop(graphene.ObjectType):
         currency=graphene.Argument(
             graphene.String,
             description=(
-                "DEPRECATED: use `channel` argument instead. This argument will be "
-                "removed in Saleor 4.0."
-                "A currency for which gateways will be returned."
+                "A currency for which gateways will be returned. "
+                f"{DEPRECATED_IN_3X_INPUT} Use `channel` argument instead."
             ),
             required=False,
         ),
@@ -122,14 +122,19 @@ class Shop(graphene.ObjectType):
     )
     channel_currencies = graphene.List(
         graphene.NonNull(graphene.String),
-        description="List of all currencies supported by shop's channels.",
+        description=(
+            f"{ADDED_IN_31} List of all currencies supported by shop's channels."
+        ),
         required=True,
     )
     countries = graphene.List(
         graphene.NonNull(CountryDisplay),
         language_code=graphene.Argument(
             LanguageCodeEnum,
-            description="A language code to return the translation for.",
+            description=(
+                "A language code to return the translation for. "
+                f"{DEPRECATED_IN_3X_INPUT}"
+            ),
         ),
         description="List of countries available in the shop.",
         required=True,
@@ -160,6 +165,14 @@ class Shop(graphene.ObjectType):
     header_text = graphene.String(description="Header text.")
     include_taxes_in_prices = graphene.Boolean(
         description="Include taxes in prices.", required=True
+    )
+    fulfillment_auto_approve = graphene.Boolean(
+        description=f"{ADDED_IN_31} Automatically approve all new fulfillments.",
+        required=True,
+    )
+    fulfillment_allow_unpaid = graphene.Boolean(
+        description=f"{ADDED_IN_31} Allow to approve fulfillments which are unpaid.",
+        required=True,
     )
     display_gross_prices = graphene.Boolean(
         description="Display prices with tax in store.", required=True
@@ -234,6 +247,8 @@ class Shop(graphene.ObjectType):
     @staticmethod
     def resolve_countries(_, _info, language_code=None):
         taxes = {vat.country_code: vat for vat in VAT.objects.all()}
+
+        # DEPRECATED: translation.override will be dropped in Saleor 4.0
         with translation.override(language_code):
             return [
                 CountryDisplay(
@@ -285,6 +300,14 @@ class Shop(graphene.ObjectType):
     @staticmethod
     def resolve_include_taxes_in_prices(_, info):
         return info.context.site.settings.include_taxes_in_prices
+
+    @staticmethod
+    def resolve_fulfillment_auto_approve(_, info):
+        return info.context.site.settings.fulfillment_auto_approve
+
+    @staticmethod
+    def resolve_fulfillment_allow_unpaid(_, info):
+        return info.context.site.settings.fulfillment_allow_unpaid
 
     @staticmethod
     def resolve_display_gross_prices(_, info):
