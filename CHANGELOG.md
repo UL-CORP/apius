@@ -16,7 +16,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix cursor-based pagination in products search - #8011 by @rafalp
 - Extend `accountRegister` mutation to consume first & last name - #8184 by @piotrgrundas
 - Introduce sales / vouchers per product variant - #8064 by @kuchichan
-
+- Introduce sales webhooks - #8157 @kuchichan
 
 # 3.0.0 [Unreleased]
 
@@ -271,6 +271,7 @@ All notable, unreleased changes to this project will be documented in this file.
 - Use root level channel argument for filtering and sorting - #7374 by @IKarbowiak
   - drop `channel` field from filters and sorters
 - Drop top-level `checkoutLine` query from the schema with related resolver, use `checkout` query instead - #7623 by @dexon44
+- Make SKU an optional field on `ProductVariant` - #7633 by @rafalp
 
 ### Other
 
