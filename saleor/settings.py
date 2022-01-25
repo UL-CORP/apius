@@ -142,8 +142,8 @@ USE_TZ = True
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 
 EMAIL_URL = os.environ.get("EMAIL_URL")
-SENDGRID_USERNAME = os.environ.get("SENDGRID_USERNAME")
-SENDGRID_PASSWORD = os.environ.get("SENDGRID_PASSWORD")
+SENDGRID_USERNAME = os.environ.get("uyghur.store@gmail.com")
+SENDGRID_PASSWORD = os.environ.get("faruk.faruk1@yahoo.com")
 if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
     EMAIL_URL = "smtp://%s:%s@smtp.sendgrid.net:587/?tls=True" % (
         SENDGRID_USERNAME,
