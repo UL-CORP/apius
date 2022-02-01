@@ -1320,6 +1320,22 @@ def numeric_attribute(db):
 
 
 @pytest.fixture
+def numeric_attribute_without_unit(db):
+    attribute = Attribute.objects.create(
+        slug="count",
+        name="Count",
+        type=AttributeType.PRODUCT_TYPE,
+        input_type=AttributeInputType.NUMERIC,
+        filterable_in_storefront=True,
+        filterable_in_dashboard=True,
+        available_in_grid=True,
+    )
+    AttributeValue.objects.create(attribute=attribute, name="9", slug="9")
+    AttributeValue.objects.create(attribute=attribute, name="15", slug="15")
+    return attribute
+
+
+@pytest.fixture
 def file_attribute(db):
     attribute = Attribute.objects.create(
         slug="image",
@@ -5102,6 +5118,15 @@ def webhook(app):
         name="Simple webhook", app=app, target_url="http://www.example.com/test"
     )
     webhook.events.create(event_type=WebhookEventAsyncType.ORDER_CREATED)
+    return webhook
+
+
+@pytest.fixture
+def any_webhook(app):
+    webhook = Webhook.objects.create(
+        name="Any webhook", app=app, target_url="http://www.example.com/any"
+    )
+    webhook.events.create(event_type=WebhookEventAsyncType.ANY)
     return webhook
 
 
