@@ -75,13 +75,8 @@ DATABASE_CONNECTION_DEFAULT_NAME = "default"
 DATABASE_CONNECTION_REPLICA_NAME = "default"
 
 DATABASES = {
-
-    "default": dj_database_url.config(
-        default="postgres://apiuyghurstore02:apiuyghurstore02@apiuyghurstore02.cwf99c8lsgsd.us-east-2.rds.amazonaws.com:5432/apiuyghurstore02", conn_max_age=600
-    )
-
     DATABASE_CONNECTION_DEFAULT_NAME: dj_database_url.config(
-        default="postgres://saleor:saleor@localhost:5432/saleor", conn_max_age=600
+        default="postgres://apiuyghurstore02:apiuyghurstore02@apiuyghurstore02.cwf99c8lsgsd.us-east-2.rds.amazonaws.com:5432/apiuyghurstore02", conn_max_age=600
     ),
     # TODO: We need to add read only user to saleor platfrom, and we need to update
     # docs.
