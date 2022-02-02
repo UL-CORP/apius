@@ -158,7 +158,7 @@ EMAIL_URL = os.environ.get("EMAIL_URL")
 SENDGRID_USERNAME = os.environ.get("uyghur.store@gmail.com")
 SENDGRID_PASSWORD = os.environ.get("faruk.faruk1@yahoo.com")
 if not EMAIL_URL and SENDGRID_USERNAME and SENDGRID_PASSWORD:
-    EMAIL_URL = "smtp://%s:%s@smtp.sendgrid.net:587/?tls=True" % (
+    EMAIL_URL = "smtp://apikey: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@smtp.sendgrid.net:587/?tls=True" % (
         SENDGRID_USERNAME,
         SENDGRID_PASSWORD,
     )
