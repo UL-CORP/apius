@@ -11,7 +11,7 @@ from ..core.connection import (
 )
 from ..core.descriptions import DEPRECATED_IN_3X_FIELD
 from ..core.fields import FilterConnectionField
-from ..core.types import ModelObjectType
+from ..core.types import ModelObjectType, NonNullList
 from ..webhook.enums import EventDeliveryStatusEnum, WebhookEventTypeEnum
 from ..webhook.filters import EventDeliveryFilterInput
 from ..webhook.sorters import (
@@ -80,6 +80,7 @@ class EventDeliveryAttempt(ModelObjectType):
     duration = graphene.Float()
     response = graphene.String()
     response_headers = graphene.String()
+    response_status_code = graphene.Int()
     request_headers = graphene.String()
     status = EventDeliveryStatusEnum(
         description="Event delivery status.", required=True
@@ -138,21 +139,21 @@ class EventDeliveryCountableConnection(CountableConnection):
 class Webhook(ModelObjectType):
     id = graphene.GlobalID(required=True)
     name = graphene.String(required=True)
-    events = graphene.List(
-        graphene.NonNull(WebhookEvent),
+    events = NonNullList(
+        WebhookEvent,
         description="List of webhook events.",
         deprecation_reason=(
             f"{DEPRECATED_IN_3X_FIELD} Use `asyncEvents` or `syncEvents` instead."
         ),
         required=True,
     )
-    sync_events = graphene.List(
-        graphene.NonNull(WebhookEventSync),
+    sync_events = NonNullList(
+        WebhookEventSync,
         description="List of synchronous webhook events.",
         required=True,
     )
-    async_events = graphene.List(
-        graphene.NonNull(WebhookEventAsync),
+    async_events = NonNullList(
+        WebhookEventAsync,
         description="List of asynchronous webhook events.",
         required=True,
     )

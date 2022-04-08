@@ -69,17 +69,16 @@ ADDRESS_FIELDS = (
 )
 
 ORDER_FIELDS = (
-    "token",
     "created",
     "status",
     "origin",
-    "user_email",
     "shipping_method_name",
     "collection_point_name",
     "shipping_price_net_amount",
     "shipping_price_gross_amount",
     "shipping_tax_rate",
     "weight",
+    "language_code",
     "private_metadata",
     "metadata",
     "total_net_amount",
@@ -281,6 +280,9 @@ def generate_order_payload(
     )
 
     extra_dict_data = {
+        "id": graphene.Node.to_global_id("Order", order.id),
+        "token": str(order.id),
+        "user_email": order.get_customer_email(),
         "original": graphene.Node.to_global_id("Order", order.original_id),
         "lines": json.loads(generate_order_lines_payload(lines)),
         "fulfillments": json.loads(fulfillments_data),
@@ -386,11 +388,32 @@ def generate_invoice_payload(
     return serializer.serialize(
         [invoice],
         fields=invoice_fields,
-        additional_fields={"order": (lambda i: i.order, ORDER_FIELDS)},
         extra_dict_data={
-            "meta": generate_meta(requestor_data=generate_requestor(requestor))
+            "meta": generate_meta(requestor_data=generate_requestor(requestor)),
+            "order": lambda i: json.loads(_generate_order_payload_for_invoice(i.order))[
+                0
+            ],
         },
     )
+
+
+@traced_payload_generator
+def _generate_order_payload_for_invoice(order: "Order"):
+    # This is a temporary method that allows attaching an order token
+    # that is no longer part of the order model.
+    # The method should be removed after removing the deprecated order token field.
+    # After that, we should move generating order data to the `additional_fields`
+    # in the `generate_invoice_payload` method.
+    serializer = PayloadSerializer()
+    payload = serializer.serialize(
+        [order],
+        fields=ORDER_FIELDS,
+        extra_dict_data={
+            "token": order.id,
+            "user_email": order.get_customer_email(),
+        },
+    )
+    return payload
 
 
 @traced_payload_generator
@@ -407,6 +430,7 @@ def generate_checkout_payload(
         "currency",
         "discount_amount",
         "discount_name",
+        "language_code",
         "private_metadata",
         "metadata",
     )
@@ -469,6 +493,7 @@ def generate_customer_payload(
             "last_name",
             "is_active",
             "date_joined",
+            "language_code",
             "private_metadata",
             "metadata",
         ],

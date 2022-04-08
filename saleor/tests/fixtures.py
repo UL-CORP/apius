@@ -41,7 +41,7 @@ from ..attribute.utils import associate_attribute_values_to_instance
 from ..checkout.fetch import fetch_checkout_info, fetch_checkout_lines
 from ..checkout.models import Checkout, CheckoutLine
 from ..checkout.utils import add_variant_to_checkout
-from ..core import JobStatus, TimePeriodType
+from ..core import EventDeliveryStatus, JobStatus, TimePeriodType
 from ..core.models import EventDelivery, EventDeliveryAttempt, EventPayload
 from ..core.payments import PaymentInterface
 from ..core.units import MeasurementUnits
@@ -1096,6 +1096,70 @@ def color_attribute(db):
 
 
 @pytest.fixture
+def attribute_without_values():
+    return Attribute.objects.create(
+        slug="dropdown",
+        name="Dropdown",
+        type=AttributeType.PRODUCT_TYPE,
+        filterable_in_storefront=True,
+        filterable_in_dashboard=True,
+        available_in_grid=True,
+        visible_in_storefront=True,
+        entity_type=None,
+    )
+
+
+@pytest.fixture
+def product_type_with_product_attributes(attribute_without_values):
+    product_type = ProductType.objects.create(
+        name="product_type_with_product_attributes",
+        slug="product-type-with-product-attributes",
+        has_variants=False,
+        is_shipping_required=False,
+        weight=0,
+    )
+    product_type.product_attributes.add(attribute_without_values)
+    return product_type
+
+
+@pytest.fixture
+def product_type_with_variant_attributes(attribute_without_values):
+    product_type = ProductType.objects.create(
+        name="product_type_with_variant_attributes",
+        slug="product-type-with-variant-attributes",
+        has_variants=False,
+        is_shipping_required=False,
+        weight=0,
+    )
+    product_type.variant_attributes.add(attribute_without_values)
+    return product_type
+
+
+@pytest.fixture
+def product_with_product_attributes(
+    product_type_with_product_attributes, non_default_category
+):
+    return Product.objects.create(
+        name="product_with_product_attributes",
+        slug="product-with-product-attributes",
+        product_type=product_type_with_product_attributes,
+        category=non_default_category,
+    )
+
+
+@pytest.fixture
+def product_with_variant_attributes(
+    product_type_with_variant_attributes, non_default_category
+):
+    return Product.objects.create(
+        name="product_with_variant_attributes",
+        slug="product-with-variant-attributes",
+        product_type=product_type_with_variant_attributes,
+        category=non_default_category,
+    )
+
+
+@pytest.fixture
 def date_attribute(db):
     attribute = Attribute.objects.create(
         slug="release-date",
@@ -1673,6 +1737,11 @@ def permission_manage_orders():
 @pytest.fixture
 def permission_manage_checkouts():
     return Permission.objects.get(codename="manage_checkouts")
+
+
+@pytest.fixture
+def permission_handle_checkouts():
+    return Permission.objects.get(codename="handle_checkouts")
 
 
 @pytest.fixture
@@ -3421,7 +3490,6 @@ def gift_card_event(gift_card, order, app, staff_user):
     parameters = {
         "message": "test message",
         "email": "testemail@email.com",
-        "order_id": order.pk,
         "tags": ["test tag"],
         "old_tags": ["test old tag"],
         "balance": {
@@ -3438,6 +3506,7 @@ def gift_card_event(gift_card, order, app, staff_user):
         user=staff_user,
         app=app,
         gift_card=gift_card,
+        order=order,
         type=GiftCardEvents.UPDATED,
         parameters=parameters,
         date=timezone.now() + datetime.timedelta(days=10),
@@ -3909,8 +3978,12 @@ def order_with_preorder_lines(
 
 @pytest.fixture
 def order_events(order):
-    for event_type, _ in OrderEvents.CHOICES:
-        OrderEvent.objects.create(type=event_type, order=order)
+    order_events = [
+        OrderEvent(type=event_type, order=order)
+        for event_type, _ in OrderEvents.CHOICES
+    ]
+    OrderEvent.objects.bulk_create(order_events)
+    return order_events
 
 
 @pytest.fixture
@@ -5645,7 +5718,24 @@ def event_attempt(event_delivery):
 @pytest.fixture
 def webhook_response():
     return WebhookResponse(
+        content="test_content",
+        request_headers={"headers": "test_request"},
+        response_headers={"headers": "test_response"},
+        response_status_code=200,
+        duration=2.0,
+        status=EventDeliveryStatus.SUCCESS,
+    )
+
+
+@pytest.fixture
+def webhook_response_failed():
+    return WebhookResponse(
         content="example_content_response",
+        request_headers={"headers": "test_request"},
+        response_headers={"headers": "test_response"},
+        response_status_code=500,
+        duration=2.0,
+        status=EventDeliveryStatus.FAILED,
     )
 
 

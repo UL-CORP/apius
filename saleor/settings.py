@@ -14,13 +14,11 @@ import sentry_sdk.utils
 from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
-from graphql.utils import schema_printer
 from pytimeparse import parse
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.logging import ignore_logger
 
-from . import patched_print_object
 from .core.languages import LANGUAGES as CORE_LANGUAGES
 
 
@@ -414,6 +412,7 @@ LOGGING = {
             "propagate": False,
         },
         "graphql.execution.utils": {"propagate": False, "handlers": ["null"]},
+        "graphql.execution.executor": {"propagate": False, "handlers": ["null"]},
     },
 }
 
@@ -634,6 +633,7 @@ def SENTRY_INIT(dsn: str, sentry_opts: dict):
     """
     sentry_sdk.init(dsn, **sentry_opts)
     ignore_logger("graphql.execution.utils")
+    ignore_logger("graphql.execution.executor")
 
 
 GRAPHENE = {
@@ -669,6 +669,7 @@ BUILTIN_PLUGINS = [
     "saleor.plugins.user_email.plugin.UserEmailPlugin",
     "saleor.plugins.admin_email.plugin.AdminEmailPlugin",
     "saleor.plugins.sendgrid.plugin.SendgridEmailPlugin",
+    "saleor.plugins.openid_connect.plugin.OpenIDConnectPlugin",
 ]
 
 # Plugin discovery
@@ -729,8 +730,7 @@ if REDIS_URL:
 CACHES = {"default": django_cache_url.config()}
 CACHES["default"]["TIMEOUT"] = parse(os.environ.get("CACHE_TIMEOUT", "7 days"))
 
-# Default False because storefront and dashboard don't support expiration of token
-JWT_EXPIRE = get_bool_from_env("JWT_EXPIRE", False)
+JWT_EXPIRE = True
 JWT_TTL_ACCESS = timedelta(seconds=parse(os.environ.get("JWT_TTL_ACCESS", "5 minutes")))
 JWT_TTL_APP_ACCESS = timedelta(
     seconds=parse(os.environ.get("JWT_TTL_APP_ACCESS", "5 minutes"))
@@ -743,11 +743,3 @@ JWT_TTL_REQUEST_EMAIL_CHANGE = timedelta(
 )
 
 # Support multiple interface notation in schema for Apollo tooling.
-
-# In `graphql-core` V2 separator for interface is `,`.
-# Apollo tooling to generate TypeScript types using `&` as interfaces separator.
-# https://github.com/graphql-python/graphql-core-legacy/pull/258
-# https://github.com/graphql-python/graphql-core-legacy/issues/176
-
-assert hasattr(schema_printer, "_print_object")
-schema_printer._print_object = patched_print_object
