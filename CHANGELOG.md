@@ -3,6 +3,7 @@
 All notable, unreleased changes to this project will be documented in this file. For the released changes, please visit the [Releases](https://github.com/mirumee/saleor/releases) page.
 
 # Unreleased
+- Fix invalid `ADDED_PRODUCTS` event parameter for `OrderLinesCreate` mutation - #9653 by @IKarbowiak
 
 ### Other changes
 - Fix for sending incorrect prices to Avatax - #9633 by @korycins
@@ -64,6 +65,9 @@ All notable, unreleased changes to this project will be documented in this file.
 - Fix for raising Permission Denied when anonymous user calls `checkout.customer` field - #9573 by @korycins
 - Optimize stock warehouse resolver performance (955489bff) by @tomaszszymanski129
 - Improve shipping zone filters performance (#9540) (7841ec536) by @tomaszszymanski129
+
+#### Saleor Apps
+- Add webhooks `MENU_CREATED`, `MENU_UPDATED`, `MENU_DELETED`, `MENU_ITEM_CREATED`, `MENU_ITEM_UPDATED`, `MENU_ITEM_DELETED` - #9651 by @SzymJ
 
 # 3.2.0
 
