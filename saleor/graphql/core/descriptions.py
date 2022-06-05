@@ -15,6 +15,7 @@ ADDED_IN_31 = "\n\nAdded in Saleor 3.1."
 ADDED_IN_32 = "\n\nAdded in Saleor 3.2."
 ADDED_IN_33 = "\n\nAdded in Saleor 3.3."
 ADDED_IN_34 = "\n\nAdded in Saleor 3.4."
+ADDED_IN_35 = "\n\nAdded in Saleor 3.5."
 
 
 PREVIEW_FEATURE = (
@@ -26,3 +27,5 @@ CHANNEL_REQUIRED = (
     "\n\nThis option requires a channel filter to work as the values can vary "
     "between channels."
 )
+
+RICH_CONTENT = "\n\nRich text format. For reference see https://editorjs.io/"

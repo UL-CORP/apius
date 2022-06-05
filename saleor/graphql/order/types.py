@@ -1,6 +1,6 @@
 import logging
 from decimal import Decimal
-from typing import Optional
+from typing import List, Optional
 from uuid import UUID
 
 import graphene
@@ -26,7 +26,7 @@ from ...core.tracing import traced_resolver
 from ...discount import OrderDiscountType
 from ...graphql.checkout.types import DeliveryMethod
 from ...graphql.utils import get_user_or_app_from_context
-from ...graphql.warehouse.dataloaders import WarehouseByIdLoader
+from ...graphql.warehouse.dataloaders import StockByIdLoader, WarehouseByIdLoader
 from ...order import OrderStatus, models
 from ...order.models import FulfillmentStatus
 from ...order.utils import (
@@ -104,7 +104,7 @@ from ..shipping.dataloaders import (
     ShippingMethodChannelListingByShippingMethodIdAndChannelSlugLoader,
 )
 from ..shipping.types import ShippingMethod
-from ..warehouse.types import Allocation, Warehouse
+from ..warehouse.types import Allocation, Stock, Warehouse
 from .dataloaders import (
     AllocationsByOrderLineIdLoader,
     FulfillmentLinesByFulfillmentIdLoader,
@@ -118,6 +118,8 @@ from .dataloaders import (
 )
 from .enums import (
     FulfillmentStatusEnum,
+    OrderAuthorizeStatusEnum,
+    OrderChargeStatusEnum,
     OrderEventsEmailsEnum,
     OrderEventsEnum,
     OrderOriginEnum,
@@ -149,22 +151,14 @@ def get_order_discount_event(discount_obj: dict):
     )
 
 
-def get_payment_status_for_order(order, transactions):
+def get_payment_status_for_order(order):
     status = ChargeStatus.NOT_CHARGED
-    captured_money = prices.Money(Decimal(0), order.currency)
-    refunded_money = prices.Money(Decimal(0), order.currency)
-    for transaction in transactions:
-        captured_money += transaction.amount_captured
-        refunded_money += transaction.amount_refunded
+    charged_money = order.total_charged
 
-    if captured_money >= order.total.gross:
+    if charged_money >= order.total.gross:
         status = ChargeStatus.FULLY_CHARGED
-    elif captured_money and captured_money < order.total.gross:
+    elif charged_money and charged_money < order.total.gross:
         status = ChargeStatus.PARTIALLY_CHARGED
-    if refunded_money >= order.total.gross:
-        status = ChargeStatus.FULLY_REFUNDED
-    elif refunded_money and refunded_money < order.total.gross:
-        status = ChargeStatus.PARTIALLY_REFUNDED
     return status
 
 
@@ -490,9 +484,28 @@ class Fulfillment(ModelObjectType):
         return root.get_status_display()
 
     @staticmethod
-    def resolve_warehouse(root: models.Fulfillment, _info):
-        line = root.lines.first()
-        return line.stock.warehouse if line and line.stock else None
+    def resolve_warehouse(root: models.Fulfillment, info):
+        def _resolve_stock_warehouse(stock: Stock):
+            return WarehouseByIdLoader(info.context).load(stock.warehouse_id)
+
+        def _resolve_stock(fulfillment_lines: List[models.FulfillmentLine]):
+            try:
+                line = fulfillment_lines[0]
+            except IndexError:
+                return None
+
+            if stock_id := line.stock_id:
+                return (
+                    StockByIdLoader(info.context)
+                    .load(stock_id)
+                    .then(_resolve_stock_warehouse)
+                )
+
+        return (
+            FulfillmentLinesByFulfillmentIdLoader(info.context)
+            .load(root.id)
+            .then(_resolve_stock)
+        )
 
 
 class OrderLine(ModelObjectType):
@@ -703,7 +716,8 @@ class Order(ModelObjectType):
         User,
         description=(
             "User who placed the order. This field is set only for orders placed by "
-            "authenticated users. Requires one of the following permissions: "
+            "authenticated users. Can be fetched for orders created in Saleor 3.2 "
+            "and later, for other orders requires one of the following permissions: "
             f"{AccountPermissions.MANAGE_USERS.name}, "
             f"{OrderPermissions.MANAGE_ORDERS.name}, "
             f"{AuthorizationFilters.OWNER.name}."
@@ -713,16 +727,18 @@ class Order(ModelObjectType):
     billing_address = graphene.Field(
         "saleor.graphql.account.types.Address",
         description=(
-            "Billing address. Requires one of the following permissions to view the "
-            f"full data: {OrderPermissions.MANAGE_ORDERS.name}, "
+            "Billing address. The full data can be access for orders created "
+            "in Saleor 3.2 and later, for other orders requires one of the following "
+            f"permissions: {OrderPermissions.MANAGE_ORDERS.name}, "
             f"{AuthorizationFilters.OWNER.name}."
         ),
     )
     shipping_address = graphene.Field(
         "saleor.graphql.account.types.Address",
         description=(
-            "Shipping address. Requires one of the following permissions to view the "
-            f"full data: {OrderPermissions.MANAGE_ORDERS.name}, "
+            "Shipping address. The full data can be access for orders created "
+            "in Saleor 3.2 and later, for other orders requires one of the following "
+            f"permissions: {OrderPermissions.MANAGE_ORDERS.name}, "
             f"{AuthorizationFilters.OWNER.name}."
         ),
     )
@@ -765,7 +781,8 @@ class Order(ModelObjectType):
     invoices = NonNullList(
         Invoice,
         description=(
-            "List of order invoices. Requires one of the following permissions: "
+            "List of order invoices. Can be fetched for orders created in Saleor 3.2 "
+            "and later, for other orders requires one of the following permissions: "
             f"{OrderPermissions.MANAGE_ORDERS.name}, {AuthorizationFilters.OWNER.name}."
         ),
         required=True,
@@ -785,6 +802,16 @@ class Order(ModelObjectType):
     )
     payment_status_display = graphene.String(
         description="User-friendly payment status.", required=True
+    )
+    authorize_status = OrderAuthorizeStatusEnum(
+        description=(
+            "The authorize status of the order." + ADDED_IN_34 + PREVIEW_FEATURE
+        ),
+        required=True,
+    )
+    charge_status = OrderChargeStatusEnum(
+        description=("The charge status of the order." + ADDED_IN_34 + PREVIEW_FEATURE),
+        required=True,
     )
     transactions = NonNullList(
         TransactionItem,
@@ -866,8 +893,9 @@ class Order(ModelObjectType):
     )
     user_email = graphene.String(
         description=(
-            "Email address of the customer. Requires the following permissions to "
-            f"access the full data: {OrderPermissions.MANAGE_ORDERS.name}, "
+            "Email address of the customer. The full data can be access for orders "
+            "created in Saleor 3.2 and later, for other orders requires one of "
+            f"the following permissions: {OrderPermissions.MANAGE_ORDERS.name}, "
             f"{AuthorizationFilters.OWNER.name}."
         ),
         required=False,
@@ -1005,7 +1033,7 @@ class Order(ModelObjectType):
                 user, address = data
 
             requester = get_user_or_app_from_context(info.context)
-            if is_owner_or_has_one_of_perms(
+            if root.use_old_id is False or is_owner_or_has_one_of_perms(
                 requester, user, OrderPermissions.MANAGE_ORDERS
             ):
                 return address
@@ -1034,7 +1062,7 @@ class Order(ModelObjectType):
             else:
                 user, address = data
             requester = get_user_or_app_from_context(info.context)
-            if is_owner_or_has_one_of_perms(
+            if root.use_old_id is False or is_owner_or_has_one_of_perms(
                 requester, user, OrderPermissions.MANAGE_ORDERS
             ):
                 return address
@@ -1117,11 +1145,11 @@ class Order(ModelObjectType):
     def resolve_total_captured(root: models.Order, info):
         def _resolve_total_captured(transactions):
             if transactions:
-                captured_money = prices.Money(Decimal(0), root.currency)
+                charged_money = prices.Money(Decimal(0), root.currency)
                 for transaction in transactions:
-                    captured_money += transaction.amount_captured
-                return quantize_price(captured_money, root.currency)
-            return root.total_paid
+                    charged_money += transaction.amount_charged
+                return quantize_price(charged_money, root.currency)
+            return root.total_charged
 
         return (
             TransactionItemsByOrderIDLoader(info.context)
@@ -1133,10 +1161,10 @@ class Order(ModelObjectType):
     def resolve_total_balance(root: models.Order, info):
         def _resolve_total_balance(transactions):
             if transactions:
-                captured_money = prices.Money(Decimal(0), root.currency)
+                charged_money = prices.Money(Decimal(0), root.currency)
                 for transaction in transactions:
-                    captured_money += transaction.amount_captured
-                return quantize_price(captured_money - root.total.gross, root.currency)
+                    charged_money += transaction.amount_charged
+                return quantize_price(charged_money - root.total.gross, root.currency)
             return root.total_balance
 
         return (
@@ -1174,10 +1202,10 @@ class Order(ModelObjectType):
     def resolve_is_paid(root: models.Order, info):
         def _resolve_is_paid(transactions):
             if transactions:
-                captured_money = prices.Money(Decimal(0), root.currency)
+                charged_money = prices.Money(Decimal(0), root.currency)
                 for transaction in transactions:
-                    captured_money += transaction.amount_captured
-                return captured_money >= root.total.gross
+                    charged_money += transaction.amount_charged
+                return charged_money >= root.total.gross
             return root.is_fully_paid()
 
         return (
@@ -1194,9 +1222,20 @@ class Order(ModelObjectType):
     @traced_resolver
     def resolve_payment_status(root: models.Order, info):
         def _resolve_payment_status(data):
-            transactions, payments = data
+            transactions, payments, fulfillments = data
+
+            total_fulfillment_refund = sum(
+                [
+                    fulfillment.total_refund_amount
+                    for fulfillment in fulfillments
+                    if fulfillment.total_refund_amount
+                ]
+            )
+            if total_fulfillment_refund == root.total.gross.amount:
+                return ChargeStatus.FULLY_REFUNDED
+
             if transactions:
-                return get_payment_status_for_order(root, transactions)
+                return get_payment_status_for_order(root)
             last_payment = get_last_payment(payments)
             if not last_payment:
                 return ChargeStatus.NOT_CHARGED
@@ -1204,14 +1243,41 @@ class Order(ModelObjectType):
 
         transactions = TransactionItemsByOrderIDLoader(info.context).load(root.id)
         payments = PaymentsByOrderIdLoader(info.context).load(root.id)
-        return Promise.all([transactions, payments]).then(_resolve_payment_status)
+        fulfillments = FulfillmentsByOrderIdLoader(info.context).load(root.id)
+        return Promise.all([transactions, payments, fulfillments]).then(
+            _resolve_payment_status
+        )
+
+    @staticmethod
+    def resolve_authorize_status(root: models.Order, info):
+        total_covered = quantize_price(
+            root.total_authorized_amount + root.total_charged_amount, root.currency
+        )
+        total_gross = quantize_price(root.total_gross_amount, root.currency)
+        if total_covered == 0:
+            return OrderAuthorizeStatusEnum.NONE
+        if total_covered >= total_gross:
+            return OrderAuthorizeStatusEnum.FULL
+        return OrderAuthorizeStatusEnum.PARTIAL
+
+    @staticmethod
+    def resolve_charge_status(root: models.Order, info):
+        total_charged = quantize_price(root.total_charged_amount, root.currency)
+        total_gross = quantize_price(root.total_gross_amount, root.currency)
+        if total_charged <= 0:
+            return OrderChargeStatusEnum.NONE
+        if total_charged < total_gross:
+            return OrderChargeStatusEnum.PARTIAL
+        if total_charged == total_gross:
+            return OrderChargeStatusEnum.FULL
+        return OrderChargeStatusEnum.OVERCHARGED
 
     @staticmethod
     def resolve_payment_status_display(root: models.Order, info):
         def _resolve_payment_status(data):
             transactions, payments = data
             if transactions:
-                status = get_payment_status_for_order(root, transactions)
+                status = get_payment_status_for_order(root)
                 return dict(ChargeStatus.CHOICES).get(status)
             last_payment = get_last_payment(payments)
             if not last_payment:
@@ -1252,7 +1318,7 @@ class Order(ModelObjectType):
     def resolve_user_email(root: models.Order, info):
         def _resolve_user_email(user):
             requester = get_user_or_app_from_context(info.context)
-            if is_owner_or_has_one_of_perms(
+            if root.use_old_id is False or is_owner_or_has_one_of_perms(
                 requester, user, OrderPermissions.MANAGE_ORDERS
             ):
                 return user.email if user else root.user_email
@@ -1374,9 +1440,10 @@ class Order(ModelObjectType):
     @staticmethod
     def resolve_invoices(root: models.Order, info):
         requester = get_user_or_app_from_context(info.context)
-        check_is_owner_or_has_one_of_perms(
-            requester, root.user, OrderPermissions.MANAGE_ORDERS
-        )
+        if root.use_old_id is True:
+            check_is_owner_or_has_one_of_perms(
+                requester, root.user, OrderPermissions.MANAGE_ORDERS
+            )
         return InvoicesByOrderIdLoader(info.context).load(root.id)
 
     @staticmethod

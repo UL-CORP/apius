@@ -15,7 +15,7 @@ from ....page import models
 from ....page.error_codes import PageErrorCode
 from ...attribute.types import AttributeValueInput
 from ...attribute.utils import AttributeAssignmentMixin
-from ...core.descriptions import ADDED_IN_33, DEPRECATED_IN_3X_INPUT
+from ...core.descriptions import ADDED_IN_33, DEPRECATED_IN_3X_INPUT, RICH_CONTENT
 from ...core.fields import JSONString
 from ...core.mutations import ModelDeleteMutation, ModelMutation
 from ...core.types import NonNullList, PageError, SeoInput
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
 class PageInput(graphene.InputObjectType):
     slug = graphene.String(description="Page internal name.")
     title = graphene.String(description="Page title.")
-    content = JSONString(description="Page content in JSON format.")
+    content = JSONString(description="Page content." + RICH_CONTENT)
     attributes = NonNullList(AttributeValueInput, description="List of attributes.")
     is_published = graphene.Boolean(
         description="Determines if page is visible in the storefront."
@@ -280,6 +280,10 @@ class PageTypeCreate(PageTypeMixin, ModelMutation):
         if attributes is not None:
             instance.page_attributes.add(*attributes)
 
+    @classmethod
+    def post_save_action(cls, info, instance, cleaned_input):
+        info.context.plugins.page_type_created(instance)
+
 
 class PageTypeUpdate(PageTypeMixin, ModelMutation):
     class Arguments:
@@ -336,6 +340,10 @@ class PageTypeUpdate(PageTypeMixin, ModelMutation):
         if add_attributes is not None:
             instance.page_attributes.add(*add_attributes)
 
+    @classmethod
+    def post_save_action(cls, info, instance, cleaned_input):
+        info.context.plugins.page_type_updated(instance)
+
 
 class PageTypeDelete(ModelDeleteMutation):
     class Arguments:
@@ -365,3 +373,7 @@ class PageTypeDelete(ModelDeleteMutation):
             attribute__input_type__in=AttributeInputType.TYPES_WITH_UNIQUE_VALUES,
             pageassignments__assignment__page_type_id=instance_pk,
         ).delete()
+
+    @classmethod
+    def post_save_action(cls, info, instance, cleaned_input):
+        transaction.on_commit(lambda: info.context.plugins.page_type_deleted(instance))

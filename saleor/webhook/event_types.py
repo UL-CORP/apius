@@ -8,6 +8,7 @@ from ..core.permissions import (
     MenuPermissions,
     OrderPermissions,
     PagePermissions,
+    PageTypePermissions,
     PaymentPermissions,
     ProductPermissions,
     ShippingPermissions,
@@ -18,7 +19,11 @@ from ..core.permissions import (
 class WebhookEventAsyncType:
     ANY = "any_events"
 
-    APP_CREATED = "app_created"
+    ADDRESS_CREATED = "address_created"
+    ADDRESS_UPDATED = "address_updated"
+    ADDRESS_DELETED = "address_deleted"
+
+    APP_INSTALLED = "app_installed"
     APP_UPDATED = "app_updated"
     APP_DELETED = "app_deleted"
     APP_STATUS_CHANGED = "app_status_changed"
@@ -93,6 +98,10 @@ class WebhookEventAsyncType:
     PAGE_UPDATED = "page_updated"
     PAGE_DELETED = "page_deleted"
 
+    PAGE_TYPE_CREATED = "page_type_created"
+    PAGE_TYPE_UPDATED = "page_type_updated"
+    PAGE_TYPE_DELETED = "page_type_deleted"
+
     SHIPPING_PRICE_CREATED = "shipping_price_created"
     SHIPPING_PRICE_UPDATED = "shipping_price_updated"
     SHIPPING_PRICE_DELETED = "shipping_price_deleted"
@@ -106,13 +115,22 @@ class WebhookEventAsyncType:
     TRANSLATION_CREATED = "translation_created"
     TRANSLATION_UPDATED = "translation_updated"
 
+    WAREHOUSE_CREATED = "warehouse_created"
+    WAREHOUSE_UPDATED = "warehouse_updated"
+    WAREHOUSE_DELETED = "warehouse_deleted"
+
     VOUCHER_CREATED = "voucher_created"
     VOUCHER_UPDATED = "voucher_updated"
     VOUCHER_DELETED = "voucher_deleted"
 
+    OBSERVABILITY = "observability"
+
     DISPLAY_LABELS = {
         ANY: "Any events",
-        APP_CREATED: "App created",
+        ADDRESS_CREATED: "Address created",
+        ADDRESS_UPDATED: "Address updated",
+        ADDRESS_DELETED: "Address deleted",
+        APP_INSTALLED: "App created",
         APP_UPDATED: "App updated",
         APP_DELETED: "App deleted",
         APP_STATUS_CHANGED: "App status changed",
@@ -169,6 +187,9 @@ class WebhookEventAsyncType:
         PAGE_CREATED: "Page Created",
         PAGE_UPDATED: "Page Updated",
         PAGE_DELETED: "Page Deleted",
+        PAGE_TYPE_CREATED: "Page type created",
+        PAGE_TYPE_UPDATED: "Page type updated",
+        PAGE_TYPE_DELETED: "Page type deleted",
         SHIPPING_PRICE_CREATED: "Shipping price created",
         SHIPPING_PRICE_UPDATED: "Shipping price updated",
         SHIPPING_PRICE_DELETED: "Shipping price deleted",
@@ -178,14 +199,21 @@ class WebhookEventAsyncType:
         TRANSACTION_ACTION_REQUEST: "Payment action request",
         TRANSLATION_CREATED: "Create translation",
         TRANSLATION_UPDATED: "Update translation",
+        WAREHOUSE_CREATED: "Warehouse created",
+        WAREHOUSE_UPDATED: "Warehouse updated",
+        WAREHOUSE_DELETED: "Warehouse deleted",
         VOUCHER_CREATED: "Voucher created",
         VOUCHER_UPDATED: "Voucher updated",
         VOUCHER_DELETED: "Voucher deleted",
+        OBSERVABILITY: "Observability",
     }
 
     CHOICES = [
         (ANY, DISPLAY_LABELS[ANY]),
-        (APP_CREATED, DISPLAY_LABELS[APP_CREATED]),
+        (ADDRESS_CREATED, DISPLAY_LABELS[ADDRESS_CREATED]),
+        (ADDRESS_UPDATED, DISPLAY_LABELS[ADDRESS_UPDATED]),
+        (ADDRESS_DELETED, DISPLAY_LABELS[ADDRESS_DELETED]),
+        (APP_INSTALLED, DISPLAY_LABELS[APP_INSTALLED]),
         (APP_UPDATED, DISPLAY_LABELS[APP_UPDATED]),
         (APP_DELETED, DISPLAY_LABELS[APP_DELETED]),
         (APP_STATUS_CHANGED, DISPLAY_LABELS[APP_STATUS_CHANGED]),
@@ -242,6 +270,9 @@ class WebhookEventAsyncType:
         (PAGE_CREATED, DISPLAY_LABELS[PAGE_CREATED]),
         (PAGE_UPDATED, DISPLAY_LABELS[PAGE_UPDATED]),
         (PAGE_DELETED, DISPLAY_LABELS[PAGE_DELETED]),
+        (PAGE_TYPE_CREATED, DISPLAY_LABELS[PAGE_TYPE_CREATED]),
+        (PAGE_TYPE_UPDATED, DISPLAY_LABELS[PAGE_TYPE_UPDATED]),
+        (PAGE_TYPE_DELETED, DISPLAY_LABELS[PAGE_TYPE_DELETED]),
         (SHIPPING_PRICE_CREATED, DISPLAY_LABELS[SHIPPING_PRICE_CREATED]),
         (SHIPPING_PRICE_UPDATED, DISPLAY_LABELS[SHIPPING_PRICE_UPDATED]),
         (SHIPPING_PRICE_DELETED, DISPLAY_LABELS[SHIPPING_PRICE_DELETED]),
@@ -251,15 +282,22 @@ class WebhookEventAsyncType:
         (TRANSACTION_ACTION_REQUEST, DISPLAY_LABELS[TRANSACTION_ACTION_REQUEST]),
         (TRANSLATION_CREATED, DISPLAY_LABELS[TRANSLATION_CREATED]),
         (TRANSLATION_UPDATED, DISPLAY_LABELS[TRANSLATION_UPDATED]),
+        (WAREHOUSE_CREATED, DISPLAY_LABELS[WAREHOUSE_CREATED]),
+        (WAREHOUSE_UPDATED, DISPLAY_LABELS[WAREHOUSE_UPDATED]),
+        (WAREHOUSE_DELETED, DISPLAY_LABELS[WAREHOUSE_DELETED]),
         (VOUCHER_CREATED, DISPLAY_LABELS[VOUCHER_CREATED]),
         (VOUCHER_UPDATED, DISPLAY_LABELS[VOUCHER_UPDATED]),
         (VOUCHER_DELETED, DISPLAY_LABELS[VOUCHER_DELETED]),
+        (OBSERVABILITY, DISPLAY_LABELS[OBSERVABILITY]),
     ]
 
     ALL = [event[0] for event in CHOICES]
 
     PERMISSIONS = {
-        APP_CREATED: AppPermission.MANAGE_APPS,
+        ADDRESS_CREATED: AccountPermissions.MANAGE_USERS,
+        ADDRESS_UPDATED: AccountPermissions.MANAGE_USERS,
+        ADDRESS_DELETED: AccountPermissions.MANAGE_USERS,
+        APP_INSTALLED: AppPermission.MANAGE_APPS,
         APP_UPDATED: AppPermission.MANAGE_APPS,
         APP_DELETED: AppPermission.MANAGE_APPS,
         APP_STATUS_CHANGED: AppPermission.MANAGE_APPS,
@@ -316,6 +354,9 @@ class WebhookEventAsyncType:
         PAGE_CREATED: PagePermissions.MANAGE_PAGES,
         PAGE_UPDATED: PagePermissions.MANAGE_PAGES,
         PAGE_DELETED: PagePermissions.MANAGE_PAGES,
+        PAGE_TYPE_CREATED: PageTypePermissions.MANAGE_PAGE_TYPES_AND_ATTRIBUTES,
+        PAGE_TYPE_UPDATED: PageTypePermissions.MANAGE_PAGE_TYPES_AND_ATTRIBUTES,
+        PAGE_TYPE_DELETED: PageTypePermissions.MANAGE_PAGE_TYPES_AND_ATTRIBUTES,
         SHIPPING_PRICE_CREATED: ShippingPermissions.MANAGE_SHIPPING,
         SHIPPING_PRICE_UPDATED: ShippingPermissions.MANAGE_SHIPPING,
         SHIPPING_PRICE_DELETED: ShippingPermissions.MANAGE_SHIPPING,
@@ -328,6 +369,10 @@ class WebhookEventAsyncType:
         VOUCHER_CREATED: DiscountPermissions.MANAGE_DISCOUNTS,
         VOUCHER_UPDATED: DiscountPermissions.MANAGE_DISCOUNTS,
         VOUCHER_DELETED: DiscountPermissions.MANAGE_DISCOUNTS,
+        WAREHOUSE_CREATED: ProductPermissions.MANAGE_PRODUCTS,
+        WAREHOUSE_UPDATED: ProductPermissions.MANAGE_PRODUCTS,
+        WAREHOUSE_DELETED: ProductPermissions.MANAGE_PRODUCTS,
+        OBSERVABILITY: AppPermission.MANAGE_OBSERVABILITY,
     }
 
 
@@ -403,7 +448,10 @@ class WebhookEventSyncType:
 
 
 SUBSCRIBABLE_EVENTS = [
-    WebhookEventAsyncType.APP_CREATED,
+    WebhookEventAsyncType.ADDRESS_CREATED,
+    WebhookEventAsyncType.ADDRESS_UPDATED,
+    WebhookEventAsyncType.ADDRESS_DELETED,
+    WebhookEventAsyncType.APP_INSTALLED,
     WebhookEventAsyncType.APP_UPDATED,
     WebhookEventAsyncType.APP_DELETED,
     WebhookEventAsyncType.APP_STATUS_CHANGED,
@@ -459,6 +507,9 @@ SUBSCRIBABLE_EVENTS = [
     WebhookEventAsyncType.PAGE_CREATED,
     WebhookEventAsyncType.PAGE_UPDATED,
     WebhookEventAsyncType.PAGE_DELETED,
+    WebhookEventAsyncType.PAGE_TYPE_CREATED,
+    WebhookEventAsyncType.PAGE_TYPE_UPDATED,
+    WebhookEventAsyncType.PAGE_TYPE_DELETED,
     WebhookEventAsyncType.SHIPPING_PRICE_CREATED,
     WebhookEventAsyncType.SHIPPING_PRICE_UPDATED,
     WebhookEventAsyncType.SHIPPING_PRICE_DELETED,
@@ -471,4 +522,7 @@ SUBSCRIBABLE_EVENTS = [
     WebhookEventAsyncType.VOUCHER_CREATED,
     WebhookEventAsyncType.VOUCHER_UPDATED,
     WebhookEventAsyncType.VOUCHER_DELETED,
+    WebhookEventAsyncType.WAREHOUSE_CREATED,
+    WebhookEventAsyncType.WAREHOUSE_UPDATED,
+    WebhookEventAsyncType.WAREHOUSE_DELETED,
 ]

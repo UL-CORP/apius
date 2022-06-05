@@ -23,7 +23,10 @@ order_updated_event_enum_description = (
 
 
 WEBHOOK_EVENT_DESCRIPTION = {
-    WebhookEventAsyncType.APP_CREATED: "A new app created.",
+    WebhookEventAsyncType.ADDRESS_CREATED: "A new address created.",
+    WebhookEventAsyncType.ADDRESS_UPDATED: "An address updated.",
+    WebhookEventAsyncType.ADDRESS_DELETED: "An address deleted.",
+    WebhookEventAsyncType.APP_INSTALLED: "A new app installed.",
     WebhookEventAsyncType.APP_UPDATED: "An app updated.",
     WebhookEventAsyncType.APP_DELETED: "An app deleted.",
     WebhookEventAsyncType.APP_STATUS_CHANGED: "An app status is changed.",
@@ -66,6 +69,9 @@ WEBHOOK_EVENT_DESCRIPTION = {
     WebhookEventAsyncType.PAGE_CREATED: "A new page is created.",
     WebhookEventAsyncType.PAGE_UPDATED: "A page is updated.",
     WebhookEventAsyncType.PAGE_DELETED: "A page is deleted.",
+    WebhookEventAsyncType.PAGE_TYPE_CREATED: "A new page type is created.",
+    WebhookEventAsyncType.PAGE_TYPE_UPDATED: "A page type is updated.",
+    WebhookEventAsyncType.PAGE_TYPE_DELETED: "A page type is deleted.",
     WebhookEventAsyncType.PRODUCT_CREATED: "A new product is created.",
     WebhookEventAsyncType.PRODUCT_UPDATED: "A product is updated.",
     WebhookEventAsyncType.PRODUCT_DELETED: "A product is deleted.",
@@ -78,10 +84,14 @@ WEBHOOK_EVENT_DESCRIPTION = {
     WebhookEventAsyncType.SHIPPING_ZONE_CREATED: "A new shipping zone is created.",
     WebhookEventAsyncType.SHIPPING_ZONE_UPDATED: "A shipping zone is updated.",
     WebhookEventAsyncType.SHIPPING_ZONE_DELETED: "A shipping zone is deleted.",
+    WebhookEventAsyncType.WAREHOUSE_CREATED: "A new warehouse created.",
+    WebhookEventAsyncType.WAREHOUSE_UPDATED: "A warehouse is updated.",
+    WebhookEventAsyncType.WAREHOUSE_DELETED: "A warehouse is deleted.",
     WebhookEventAsyncType.VOUCHER_CREATED: "A new voucher created.",
     WebhookEventAsyncType.VOUCHER_UPDATED: "A voucher is updated.",
     WebhookEventAsyncType.VOUCHER_DELETED: "A voucher is deleted.",
     WebhookEventAsyncType.ANY: "All the events.",
+    WebhookEventAsyncType.OBSERVABILITY: "An observability event is created.",
 }
 
 
