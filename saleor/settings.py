@@ -55,7 +55,7 @@ MANAGERS = ADMINS
 
 _DEFAULT_CLIENT_HOSTS = "localhost,127.0.0.1"
 
-ALLOWED_CLIENT_HOSTS = os.environ.get("ALLOWED_CLIENT_HOSTS, 127.0.0.1, c.uyghur.store, *")
+ALLOWED_CLIENT_HOSTS = ("my.uyghur.store, *")
 if not ALLOWED_CLIENT_HOSTS:
     if DEBUG:
         ALLOWED_CLIENT_HOSTS = _DEFAULT_CLIENT_HOSTS
