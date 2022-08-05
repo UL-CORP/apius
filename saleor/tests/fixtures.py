@@ -92,6 +92,7 @@ from ..plugins.manager import get_plugins_manager
 from ..plugins.models import PluginConfiguration
 from ..plugins.vatlayer.plugin import VatlayerPlugin
 from ..plugins.webhook.tasks import WebhookResponse
+from ..plugins.webhook.tests.subscription_webhooks import subscription_queries
 from ..plugins.webhook.utils import to_payment_app_id
 from ..product import ProductMediaTypes, ProductTypeKind
 from ..product.models import (
@@ -318,6 +319,16 @@ def checkout_with_item(checkout, product):
     variant = product.variants.first()
     checkout_info = fetch_checkout_info(checkout, [], [], get_plugins_manager())
     add_variant_to_checkout(checkout_info, variant, 3)
+    checkout.save()
+    return checkout
+
+
+@pytest.fixture
+def checkout_with_same_items_in_multiple_lines(checkout, product):
+    variant = product.variants.first()
+    checkout_info = fetch_checkout_info(checkout, [], [], get_plugins_manager())
+    add_variant_to_checkout(checkout_info, variant, 1)
+    add_variant_to_checkout(checkout_info, variant, 1, force_new_line=True)
     checkout.save()
     return checkout
 
@@ -3987,7 +3998,8 @@ def order_with_lines_and_events(order_with_lines, staff_user):
         order=order_with_lines,
         user=staff_user,
         app=None,
-        order_lines=[(1, order_with_lines.lines.first())],
+        order_lines=[order_with_lines.lines.first()],
+        quantity_diff=1,
     )
     return order_with_lines
 
@@ -5442,6 +5454,27 @@ def payment_app(db, permission_manage_payments):
         name="payment-webhook-1",
         app=app,
         target_url="https://payment-gateway.com/api/",
+    )
+    webhook.events.bulk_create(
+        [
+            WebhookEvent(event_type=event_type, webhook=webhook)
+            for event_type in WebhookEventSyncType.PAYMENT_EVENTS
+        ]
+    )
+    return app
+
+
+@pytest.fixture
+def payment_app_with_subscription_webhooks(db, permission_manage_payments):
+    app = App.objects.create(name="Payment App", is_active=True)
+    app.tokens.create(name="Default")
+    app.permissions.add(permission_manage_payments)
+
+    webhook = Webhook.objects.create(
+        name="payment-subscription-webhook-1",
+        app=app,
+        target_url="https://payment-gateway.com/api/",
+        subscription_query=subscription_queries.PAYMENT_AUTHORIZE,
     )
     webhook.events.bulk_create(
         [
