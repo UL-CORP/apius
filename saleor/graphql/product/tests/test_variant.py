@@ -582,6 +582,14 @@ CREATE_VARIANT_MUTATION = """
                             globalThreshold
                             endDate
                         }
+                        metadata {
+                            key
+                            value
+                        }
+                        privateMetadata {
+                            key
+                            value
+                        }
                     }
                 }
             }
@@ -601,11 +609,12 @@ def test_create_variant_with_name(
     warehouse,
 ):
     # given
-    query = CREATE_VARIANT_MUTATION
     product_id = graphene.Node.to_global_id("Product", product.pk)
     sku = "1"
     name = "test-name"
     weight = 10.22
+    metadata_key = "md key"
+    metadata_value = "md value"
     variant_slug = product_type.variant_attributes.first().slug
     attribute_id = graphene.Node.to_global_id(
         "Attribute", product_type.variant_attributes.first().pk
@@ -627,12 +636,14 @@ def test_create_variant_with_name(
             "weight": weight,
             "attributes": [{"id": attribute_id, "values": [variant_value]}],
             "trackInventory": True,
+            "metadata": [{"key": metadata_key, "value": metadata_value}],
+            "privateMetadata": [{"key": metadata_key, "value": metadata_value}],
         }
     }
 
     # when
     response = staff_api_client.post_graphql(
-        query, variables, permissions=[permission_manage_products]
+        CREATE_VARIANT_MUTATION, variables, permissions=[permission_manage_products]
     )
     content = get_graphql_content(response)["data"]["productVariantCreate"]
     flush_post_commit_hooks()
@@ -649,6 +660,11 @@ def test_create_variant_with_name(
     assert len(data["stocks"]) == 1
     assert data["stocks"][0]["quantity"] == stocks[0]["quantity"]
     assert data["stocks"][0]["warehouse"]["slug"] == warehouse.slug
+    assert data["metadata"][0]["key"] == metadata_key
+    assert data["metadata"][0]["value"] == metadata_value
+    assert data["privateMetadata"][0]["key"] == metadata_key
+    assert data["privateMetadata"][0]["value"] == metadata_value
+
     created_webhook_mock.assert_called_once_with(product.variants.last())
     updated_webhook_mock.assert_not_called()
 
@@ -2662,8 +2678,8 @@ def test_update_product_variant_with_current_attribute(
         "id": variant_id,
         "sku": sku,
         "attributes": [
-            {"id": color_attribute_id, "values": ["red"]},
-            {"id": size_attribute_id, "values": ["small"]},
+            {"id": color_attribute_id, "values": ["Red"]},
+            {"id": size_attribute_id, "values": ["Small"]},
         ],
     }
 
@@ -2680,6 +2696,48 @@ def test_update_product_variant_with_current_attribute(
     assert variant.sku == sku
     assert variant.attributes.first().values.first().slug == "red"
     assert variant.attributes.last().values.first().slug == "small"
+
+
+def test_update_product_variant_with_matching_slugs_different_values(
+    staff_api_client,
+    product_with_variant_with_two_attributes,
+    color_attribute,
+    size_attribute,
+    permission_manage_products,
+):
+    product = product_with_variant_with_two_attributes
+    variant = product.variants.first()
+    sku = str(uuid4())[:12]
+    assert not variant.sku == sku
+    assert variant.attributes.first().values.first().slug == "red"
+    assert variant.attributes.last().values.first().slug == "small"
+
+    variant_id = graphene.Node.to_global_id("ProductVariant", variant.pk)
+    color_attribute_id = graphene.Node.to_global_id("Attribute", color_attribute.pk)
+    size_attribute_id = graphene.Node.to_global_id("Attribute", size_attribute.pk)
+    color_new_value = "r.ed"
+    size_new_value = "SmaLL"
+    variables = {
+        "id": variant_id,
+        "sku": sku,
+        "attributes": [
+            {"id": color_attribute_id, "values": [color_new_value]},
+            {"id": size_attribute_id, "values": [size_new_value]},
+        ],
+    }
+
+    response = staff_api_client.post_graphql(
+        QUERY_UPDATE_VARIANT_ATTRIBUTES,
+        variables,
+        permissions=[permission_manage_products],
+    )
+    content = get_graphql_content(response)
+    data = content["data"]["productVariantUpdate"]
+    assert not data["errors"]
+    variant.refresh_from_db()
+    assert variant.sku == sku
+    assert variant.attributes.first().values.first().slug == "red-2"
+    assert variant.attributes.last().values.first().slug == "small-2"
 
 
 @patch("saleor.plugins.manager.PluginsManager.product_variant_updated")
@@ -3126,8 +3184,8 @@ def test_update_product_variant_with_new_attribute(
         "id": variant_id,
         "sku": sku,
         "attributes": [
-            {"id": color_attribute_id, "values": ["red"]},
-            {"id": size_attribute_id, "values": ["big"]},
+            {"id": color_attribute_id, "values": ["Red"]},
+            {"id": size_attribute_id, "values": ["Big"]},
         ],
     }
 
