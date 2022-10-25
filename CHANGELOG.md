@@ -21,6 +21,9 @@ All notable, unreleased changes to this project will be documented in this file.
 - Allow sorting products by `CREATED_AT` field. #10900 by @zedzior
 - Add ability to pass metadata directly in create/update mutations for product app models - #10689 by @SzymJ
 - Add ability to use SKU argument in `productVariantUpdate`, `productVariantDelete`, `productVariantBulkDelete`, `productVariantStocksUpdate`, `productVariantStocksDelete`, `productVariantChannelListingUpdate` mutations - #10861 by @SzymJ
+- Add sorting by `CREATED_AT` field. #10911 by @zedzior
+  - Affected types: GiftCard, Page.
+  - Deprecated `CREATION_DATE` sort field on Page type. Use `CREATED_AT` instead.
 
 ### Other changes
 
@@ -33,6 +36,22 @@ All notable, unreleased changes to this project will be documented in this file.
 ### GraphQL API
 
 - Add `taxExemptionManage` mutation - #10344 by @SzymJ
+### Other changes
+
+- Add new asynchronous events for objects metadata updates - #10520 by @rafalp
+  - `CHECKOUT_METADATA_UPDATED`
+  - `COLLECTION_METADATA_UPDATED`
+  - `CUSTOMER_METADATA_UPDATED`
+  - `FULFILLMENT_METADATA_UPDATED`
+  - `GIFT_CARD_METADATA_UPDATED`
+  - `ORDER_METADATA_UPDATED`
+  - `PRODUCT_METADATA_UPDATED`
+  - `PRODUCT_VARIANT_METADATA_UPDATED`
+  - `SHIPPING_ZONE_METADATA_UPDATED`
+  - `TRANSACTION_ITEM_METADATA_UPDATED`
+  - `WAREHOUSE_METADATA_UPDATED`
+  - `VOUCHER_METADATA_UPDATED`
+
 
 # 3.7.0
 
